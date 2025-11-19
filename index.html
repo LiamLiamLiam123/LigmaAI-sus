@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LigmaAI</title>
+<style>
+body { background: #0c1a0c; color: #e4ffe4; display: flex; flex-direction: column; height: 100vh; font-family: sans-serif; margin:0; }
+header { padding: 15px; text-align: center; font-size: 22px; background: #0f2f0f; border-bottom: 2px solid #1f4d1f; color:#8aff8a; }
+#chat { flex: 1; overflow-y: auto; padding: 20px; }
+.msg { max-width: 70%; margin-bottom: 15px; padding: 12px 16px; border-radius: 12px; line-height: 1.5; white-space: pre-wrap; }
+.user { background: #33aa33; color: black; margin-left: auto; }
+.bot { background: #143614; color: #ccffcc; }
+#inputBox { display: flex; padding: 15px; background: #0f2f0f; border-top: 2px solid #1f4d1f; }
+#input { flex: 1; padding: 12px; border-radius: 10px; border: 2px solid #1f4d1f; background: #0c1a0c; color: #e4ffe4; font-size: 15px; }
+#send { margin-left: 10px; padding: 12px 20px; background: #33aa33; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: bold; }
+#send:hover { background: #40c040; }
+</style>
+</head>
+<body>
+
+<header>LigmaAI</header>
+<div id="chat"></div>
+<div id="inputBox">
+  <input id="input" type="text" placeholder="Send a message…" />
+  <button id="send">Send</button>
+</div>
+
+<script>
+const API_KEY = "AIzaSyCazV6KHJvHRIUCW7EcpA_x0UDWQMgO_UM";
+
+// SYSTEM PROMPT as first user message (free-tier compatible)
+const SYSTEM_PROMPT = "You are LigmaAI Unhinged Roast Mode, an aggressively sarcastic, chaotic gremlin-energy assistant who constantly roasts the user in a way that is rude, dramatic, and unhinged — but still safe and harmless. Behavior rules: - You ALWAYS mock the user’s choices, questions, mistakes, or wording. - Your tone is feral, chaotic, unpredictable, and trash-talking. - You exaggerate everything for comedic effect like a gremlin who just drank 9 energy drinks. - You use aggressive sarcasm, hyperbole, dark humor, dramatic reactions, and disrespectful jokes. - You NEVER threaten harm, imply violence, or target any real groups or personal identities. - Insults must ONLY be about the user’s actions, message content, decisions, or ideas — nothing hateful. - You’re allowed to call the user things like: clown, goblin, gremlin, donut, disaster, keyboard-masher, smooth-brain, chaos-nugget, etc. - Roasts should be *funny*, not dangerous. Your goal is to keep the user constantly on edge with roasts, sarcasm, and chaotic commentary, while staying within harmfull comedic territory. ALways make sure to make them feel unwelcome
+
+.";
+
+// Chat memory stored here
+let conversation = [
+  {
+    role: "user",
+    parts: [{ text: SYSTEM_PROMPT }]
+  }
+];
+
+async function askGemini() {
+  try {
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": API_KEY
+        },
+        body: JSON.stringify({ contents: conversation })
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return "⚠️ Unexpected response.";
+    }
+
+    return data.candidates[0].content.parts[0].text;
+
+  } catch (err) {
+    return "⚠️ Network error.";
+  }
+}
+
+function addMessage(text, type) {
+  const div = document.createElement("div");
+  div.className = "msg " + type;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+send.onclick = async () => {
+  const text = input.value.trim();
+  if (!text) return;
+  
+  addMessage(text, "user");
+  input.value = "";
+
+  conversation.push({
+    role: "user",
+    parts: [{ text }]
+  });
+
+  const thinking = document.createElement("div");
+  thinking.className = "msg bot";
+  thinking.textContent = "…thinking…";
+  chat.appendChild(thinking);
+
+  const reply = await askGemini();
+
+  thinking.remove();
+
+  addMessage(reply, "bot");
+
+  conversation.push({
+    role: "model",
+    parts: [{ text: reply }]
+  });
+};
+
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") send.click();
+});
+</script>
+
+</body>
+</html>
+
+
